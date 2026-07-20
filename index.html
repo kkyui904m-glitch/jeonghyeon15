@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>jeonghyeon_15</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; color: #000; }
         body {
@@ -58,7 +57,7 @@
             <h3>콘텐츠 추가 (관리자 전용)</h3>
             <br>
             <div class="form-group">
-                <label for="imgFile">사진 업로드:</label>
+                <label for="imgFile">사진 선택:</label>
                 <input type="file" id="imgFile" accept="image/*">
             </div>
             <div class="form-group">
@@ -92,28 +91,31 @@
     </div>
 
     <script>
-        // 스크린샷 기반 Firebase 설정 적용
+        // 자동 동기화용 실시간 클라우드 DB 연동 설정
         const firebaseConfig = {
             apiKey: "AIzaSyCVrxmd43JpHQLGUv8Q_ElJ9U8MXyzWjPQ",
             authDomain: "jeonghyeon15-afdfe.firebaseapp.com",
+            databaseURL: "https://jeonghyeon15-afdfe-default-rtdb.firebaseio.com",
             projectId: "jeonghyeon15-afdfe",
             storageBucket: "jeonghyeon15-afdfe.firebasestorage.app",
             messagingSenderId: "71726702953",
-            appId: "1:71726702953:web:4ea7949df510fc3f45ddf8",
-            measurementId: "G-XC8JGWVRZ0"
+            appId: "1:71726702953:web:4ea7949df510fc3f45ddf8"
         };
 
-        // Firebase 초기화
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const storage = firebase.storage();
+        const rtdb = firebase.database();
 
+        const IMGBB_API_KEY = "c896e0dbbfef14a38dfc75f0f35be489";
         const ADMIN_ID = "jeonghyeon";
         const ADMIN_PW = "0015";
         let isAdmin = false;
 
+        // 실시간 동기화 수신기 (데이터가 변경되면 휴대폰/PC 모두 자동 업데이트)
         window.onload = function() {
-            renderContent();
+            rtdb.ref('items').on('value', (snapshot) => {
+                const data = snapshot.val();
+                renderContent(data);
+            });
         };
 
         function openLoginModal() { document.getElementById('loginModal').style.display = 'flex'; }
@@ -133,7 +135,7 @@
                 authBtn.onclick = logout;
                 
                 closeLoginModal();
-                renderContent();
+                rtdb.ref('items').once('value', (snapshot) => renderContent(snapshot.val()));
             } else {
                 alert('아이디 또는 비밀번호가 올바르지 않습니다.');
             }
@@ -148,7 +150,7 @@
             authBtn.innerText = '관리자 로그인';
             authBtn.onclick = openLoginModal;
             
-            renderContent();
+            rtdb.ref('items').once('value', (snapshot) => renderContent(snapshot.val()));
         }
 
         async function addContent() {
@@ -158,25 +160,39 @@
             const file = fileInput.files[0];
 
             if (!file && !linkUrl) {
-                alert('사진을 업로드하거나 링크 URL 중 하나는 입력해야 합니다.');
+                alert('사진을 선택하거나 링크 URL을 입력해 주세요.');
                 return;
             }
 
             const addBtn = document.getElementById('addBtn');
-            addBtn.innerText = "업로드 중...";
+            addBtn.innerText = "동기화 저장 중...";
             addBtn.disabled = true;
 
-            let downloadUrl = "";
+            let imageUrl = "";
 
             try {
                 if (file) {
-                    const storageRef = storage.ref('images/' + Date.now() + '_' + file.name);
-                    const snapshot = await storageRef.put(file);
-                    downloadUrl = await snapshot.ref.getDownloadURL();
+                    const formData = new FormData();
+                    formData.append('image', file);
+
+                    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        imageUrl = data.data.url;
+                    } else {
+                        throw new Error('이미지 업로드 실패');
+                    }
                 }
 
-                await db.collection("items").add({
-                    imgUrl: downloadUrl,
+                // 클라우드 실시간 데이터베이스에 저장
+                const newItemRef = rtdb.ref('items').push();
+                await newItemRef.set({
+                    id: newItemRef.key,
+                    imgUrl: imageUrl,
                     linkUrl: linkUrl,
                     title: titleText || '제목 없음',
                     createdAt: Date.now()
@@ -186,11 +202,9 @@
                 document.getElementById('linkUrl').value = '';
                 document.getElementById('titleText').value = '';
 
-                alert('등록되었습니다!');
-                renderContent();
+                alert('모든 기기에 자동 동기화되었습니다!');
             } catch (error) {
-                console.error(error);
-                alert('업로드 실패: ' + error.message);
+                alert('저장 오류: ' + error.message);
             } finally {
                 addBtn.innerText = "추가하기";
                 addBtn.disabled = false;
@@ -198,41 +212,37 @@
         }
 
         async function deleteItem(id) {
-            if (confirm('정말 삭제하시겠습니까?')) {
-                await db.collection("items").doc(id).delete();
-                renderContent();
+            if (confirm('삭제하시겠습니까? (모든 기기에서 함께 삭제됩니다)')) {
+                await rtdb.ref('items/' + id).remove();
             }
         }
 
-        function renderContent() {
+        function renderContent(data) {
             const grid = document.getElementById('contentGrid');
-            grid.innerHTML = '<p>로딩 중...</p>';
+            grid.innerHTML = '';
 
-            db.collection("items").orderBy("createdAt", "desc").get().then((querySnapshot) => {
-                grid.innerHTML = '';
-                querySnapshot.forEach((doc) => {
-                    const item = doc.data();
-                    const card = document.createElement('div');
-                    card.className = 'card';
+            if (!data) return;
 
-                    let html = '';
-                    if (item.imgUrl) {
-                        html += `<img src="${item.imgUrl}" alt="사진">`;
-                    }
-                    html += `<p style="font-weight: bold; margin-bottom: 5px;">${item.title}</p>`;
-                    if (item.linkUrl) {
-                        html += `<a href="${item.linkUrl}" target="_blank" rel="noopener noreferrer">링크 바로가기</a>`;
-                    }
-                    if (isAdmin) {
-                        html += `<button class="delete-btn" onclick="deleteItem('${doc.id}')">삭제</button>`;
-                    }
+            const items = Object.values(data).sort((a, b) => b.createdAt - a.createdAt);
 
-                    card.innerHTML = html;
-                    grid.appendChild(card);
-                });
-            }).catch((err) => {
-                grid.innerHTML = '';
-                console.error(err);
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                let html = '';
+                if (item.imgUrl) {
+                    html += `<img src="${item.imgUrl}" alt="사진">`;
+                }
+                html += `<p style="font-weight: bold; margin-bottom: 5px;">${item.title}</p>`;
+                if (item.linkUrl) {
+                    html += `<a href="${item.linkUrl}" target="_blank" rel="noopener noreferrer">링크 바로가기</a>`;
+                }
+                if (isAdmin) {
+                    html += `<button class="delete-btn" onclick="deleteItem('${item.id}')">삭제</button>`;
+                }
+
+                card.innerHTML = html;
+                grid.appendChild(card);
             });
         }
     </script>
