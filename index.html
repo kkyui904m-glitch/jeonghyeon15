@@ -4,153 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>jeonghyeon_15</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
     <style>
-        /* 전체 스타일 정의 (하늘색/흰색 배경, 검은색 글자) */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            color: #000000; /* 글자색: 검은색 */
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; color: #000; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #87CEEB 0%, #FFFFFF 100%);
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center;
         }
-
         header {
-            width: 100%;
-            max-width: 800px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; background-color: rgba(255, 255, 255, 0.9); border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px;
         }
-
-        .site-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
+        .site-title { font-size: 1.5rem; font-weight: bold; }
         .btn {
-            background-color: #87CEEB;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
+            background-color: #87CEEB; border: none; padding: 8px 16px; border-radius: 5px;
+            cursor: pointer; font-weight: bold; transition: background 0.2s;
         }
-
-        .btn:hover {
-            background-color: #70b5d3;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 800px;
-        }
-
-        /* 관리자 패널 */
+        .btn:hover { background-color: #70b5d3; }
+        .container { width: 100%; max-width: 800px; }
         .admin-panel {
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            display: none;
+            background-color: #ffffff; padding: 20px; border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; display: none;
         }
-
-        .admin-panel.active {
-            display: block;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        /* 콘텐츠 목록 카드 */
-        .content-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
+        .admin-panel.active { display: block; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+        .content-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
         .card {
-            background-color: #ffffff;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            word-break: break-all;
+            background-color: #ffffff; border-radius: 10px; padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; word-break: break-all;
         }
-
-        .card img {
-            max-width: 100%;
-            max-height: 200px;
-            object-fit: cover;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-
-        .card a {
-            color: #1e90ff;
-            text-decoration: underline;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        .delete-btn {
-            background-color: #ff6b6b;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 3px;
-            cursor: pointer;
-            margin-top: 10px;
-            align-self: flex-end;
-        }
-
-        /* 모달 (로그인 창) */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 10px;
-            width: 300px;
-        }
+        .card img { max-width: 100%; max-height: 200px; object-fit: cover; border-radius: 5px; margin-bottom: 10px; }
+        .card a { color: #1e90ff; text-decoration: underline; font-weight: bold; margin-top: 10px; }
+        .delete-btn { background-color: #ff6b6b; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-top: 10px; align-self: flex-end; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background-color: #ffffff; padding: 30px; border-radius: 10px; width: 300px; }
     </style>
 </head>
 <body>
@@ -176,7 +69,7 @@
                 <label for="titleText">제목/설명:</label>
                 <input type="text" id="titleText" placeholder="사진 또는 링크 설명">
             </div>
-            <button class="btn" onclick="addContent()">추가하기</button>
+            <button class="btn" id="addBtn" onclick="addContent()">추가하기</button>
         </div>
 
         <div id="contentGrid" class="content-grid"></div>
@@ -199,23 +92,32 @@
     </div>
 
     <script>
-        // 관리자 계정 정보
+        // 스크린샷 기반 Firebase 설정 적용
+        const firebaseConfig = {
+            apiKey: "AIzaSyCVrxmd43JpHQLGUv8Q_ElJ9U8MXyzWjPQ",
+            authDomain: "jeonghyeon15-afdfe.firebaseapp.com",
+            projectId: "jeonghyeon15-afdfe",
+            storageBucket: "jeonghyeon15-afdfe.firebasestorage.app",
+            messagingSenderId: "71726702953",
+            appId: "1:71726702953:web:4ea7949df510fc3f45ddf8",
+            measurementId: "G-XC8JGWVRZ0"
+        };
+
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
         const ADMIN_ID = "jeonghyeon";
         const ADMIN_PW = "0015";
-
         let isAdmin = false;
 
         window.onload = function() {
             renderContent();
         };
 
-        function openLoginModal() {
-            document.getElementById('loginModal').style.display = 'flex';
-        }
-
-        function closeLoginModal() {
-            document.getElementById('loginModal').style.display = 'none';
-        }
+        function openLoginModal() { document.getElementById('loginModal').style.display = 'flex'; }
+        function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
 
         function login() {
             const idInput = document.getElementById('adminId').value;
@@ -249,7 +151,7 @@
             renderContent();
         }
 
-        function addContent() {
+        async function addContent() {
             const fileInput = document.getElementById('imgFile');
             const linkUrl = document.getElementById('linkUrl').value.trim();
             const titleText = document.getElementById('titleText').value.trim();
@@ -260,73 +162,77 @@
                 return;
             }
 
-            // 사진 파일이 선택된 경우 FileReader로 읽기
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    saveItem(e.target.result, linkUrl, titleText);
-                };
-                reader.readAsDataURL(file); // 이미지를 데이터 URL 형태로 변환
-            } else {
-                saveItem('', linkUrl, titleText);
-            }
-        }
+            const addBtn = document.getElementById('addBtn');
+            addBtn.innerText = "업로드 중...";
+            addBtn.disabled = true;
 
-        function saveItem(imgData, linkUrl, titleText) {
-            const newItem = {
-                id: Date.now(),
-                imgUrl: imgData, // 읽어온 파일 이미지 데이터
-                linkUrl: linkUrl,
-                title: titleText || '제목 없음'
-            };
+            let downloadUrl = "";
 
             try {
-                let items = JSON.parse(localStorage.getItem('site_items') || '[]');
-                items.push(newItem);
-                localStorage.setItem('site_items', JSON.stringify(items));
+                if (file) {
+                    const storageRef = storage.ref('images/' + Date.now() + '_' + file.name);
+                    const snapshot = await storageRef.put(file);
+                    downloadUrl = await snapshot.ref.getDownloadURL();
+                }
 
-                // 입력창 초기화
+                await db.collection("items").add({
+                    imgUrl: downloadUrl,
+                    linkUrl: linkUrl,
+                    title: titleText || '제목 없음',
+                    createdAt: Date.now()
+                });
+
                 document.getElementById('imgFile').value = '';
                 document.getElementById('linkUrl').value = '';
                 document.getElementById('titleText').value = '';
 
+                alert('등록되었습니다!');
                 renderContent();
-            } catch (e) {
-                alert('사진 용량이 너무 큽니다. 더 작은 용량의 이미지 파일을 사용해 주세요.');
+            } catch (error) {
+                console.error(error);
+                alert('업로드 실패: ' + error.message);
+            } finally {
+                addBtn.innerText = "추가하기";
+                addBtn.disabled = false;
             }
         }
 
-        function deleteItem(id) {
-            let items = JSON.parse(localStorage.getItem('site_items') || '[]');
-            items = items.filter(item => item.id !== id);
-            localStorage.setItem('site_items', JSON.stringify(items));
-            renderContent();
+        async function deleteItem(id) {
+            if (confirm('정말 삭제하시겠습니까?')) {
+                await db.collection("items").doc(id).delete();
+                renderContent();
+            }
         }
 
         function renderContent() {
             const grid = document.getElementById('contentGrid');
-            grid.innerHTML = '';
-            
-            const items = JSON.parse(localStorage.getItem('site_items') || '[]');
+            grid.innerHTML = '<p>로딩 중...</p>';
 
-            items.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'card';
+            db.collection("items").orderBy("createdAt", "desc").get().then((querySnapshot) => {
+                grid.innerHTML = '';
+                querySnapshot.forEach((doc) => {
+                    const item = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'card';
 
-                let html = '';
-                if (item.imgUrl) {
-                    html += `<img src="${item.imgUrl}" alt="업로드 이미지">`;
-                }
-                html += `<p style="font-weight: bold; margin-bottom: 5px;">${item.title}</p>`;
-                if (item.linkUrl) {
-                    html += `<a href="${item.linkUrl}" target="_blank" rel="noopener noreferrer">링크 바로가기</a>`;
-                }
-                if (isAdmin) {
-                    html += `<button class="delete-btn" onclick="deleteItem(${item.id})">삭제</button>`;
-                }
+                    let html = '';
+                    if (item.imgUrl) {
+                        html += `<img src="${item.imgUrl}" alt="사진">`;
+                    }
+                    html += `<p style="font-weight: bold; margin-bottom: 5px;">${item.title}</p>`;
+                    if (item.linkUrl) {
+                        html += `<a href="${item.linkUrl}" target="_blank" rel="noopener noreferrer">링크 바로가기</a>`;
+                    }
+                    if (isAdmin) {
+                        html += `<button class="delete-btn" onclick="deleteItem('${doc.id}')">삭제</button>`;
+                    }
 
-                card.innerHTML = html;
-                grid.appendChild(card);
+                    card.innerHTML = html;
+                    grid.appendChild(card);
+                });
+            }).catch((err) => {
+                grid.innerHTML = '';
+                console.error(err);
             });
         }
     </script>
