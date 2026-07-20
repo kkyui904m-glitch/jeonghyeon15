@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jeonghyeon_15</title>
+    <style>
+        /* 전체 스타일 정의 (하늘색/흰색 배경, 검은색 글자) */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            color: #000000; /* 글자색: 검은색 */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #87CEEB 0%, #FFFFFF 100%); /* 하늘색 ~ 흰색 그라데이션 */
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .site-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .btn {
+            background-color: #87CEEB;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #70b5d3;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        /* 관리자 패널 */
+        .admin-panel {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: none; /* 기본적으로 숨김 */
+        }
+
+        .admin-panel.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        /* 콘텐츠 목록 카드 */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            word-break: break-all;
+        }
+
+        .card img {
+            max-width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .card a {
+            color: #1e90ff;
+            text-decoration: underline;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .delete-btn {
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+            align-self: flex-end;
+        }
+
+        /* 모달 (로그인 창) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="site-title">jeonghyeon_15</div>
+        <button id="authBtn" class="btn" onclick="openLoginModal()">관리자 로그인</button>
+    </header>
+
+    <div class="container">
+        <div id="adminPanel" class="admin-panel">
+            <h3>콘텐츠 추가 (관리자 전용)</h3>
+            <br>
+            <div class="form-group">
+                <label for="imgUrl">사진 URL:</label>
+                <input type="text" id="imgUrl" placeholder="https://example.com/image.jpg">
+            </div>
+            <div class="form-group">
+                <label for="linkUrl">연결할 링크 URL:</label>
+                <input type="text" id="linkUrl" placeholder="https://example.com">
+            </div>
+            <div class="form-group">
+                <label for="titleText">제목/설명:</label>
+                <input type="text" id="titleText" placeholder="사진 또는 링크 설명">
+            </div>
+            <button class="btn" onclick="addContent()">추가하기</button>
+        </div>
+
+        <div id="contentGrid" class="content-grid"></div>
+    </div>
+
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px;">관리자 로그인</h3>
+            <div class="form-group">
+                <label for="adminId">아이디</label>
+                <input type="text" id="adminId">
+            </div>
+            <div class="form-group">
+                <label for="adminPw">비밀번호</label>
+                <input type="password" id="adminPw">
+            </div>
+            <button class="btn" style="width: 100%;" onclick="login()">로그인</button>
+            <button class="btn" style="width: 100%; margin-top: 5px; background-color: #ccc;" onclick="closeLoginModal()">취소</button>
+        </div>
+    </div>
+
+    <script>
+        // 변경된 관리자 계정 정보
+        const ADMIN_ID = "jeonghyeon";
+        const ADMIN_PW = "0015";
+
+        let isAdmin = false;
+
+        // 페이지 로드 시 저장된 데이터 불러오기
+        window.onload = function() {
+            renderContent();
+        };
+
+        function openLoginModal() {
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+
+        function login() {
+            const idInput = document.getElementById('adminId').value;
+            const pwInput = document.getElementById('adminPw').value;
+
+            if (idInput === ADMIN_ID && pwInput === ADMIN_PW) {
+                isAdmin = true;
+                alert('관리자로 로그인되었습니다.');
+                document.getElementById('adminPanel').classList.add('active');
+                
+                const authBtn = document.getElementById('authBtn');
+                authBtn.innerText = '로그아웃';
+                authBtn.onclick = logout;
+                
+                closeLoginModal();
+                renderContent();
+            } else {
+                alert('아이디 또는 비밀번호가 올바르지 않습니다.');
+            }
+        }
+
+        function logout() {
+            isAdmin = false;
+            alert('로그아웃되었습니다.');
+            document.getElementById('adminPanel').classList.remove('active');
+            
+            const authBtn = document.getElementById('authBtn');
+            authBtn.innerText = '관리자 로그인';
+            authBtn.onclick = openLoginModal;
+            
+            renderContent();
+        }
+
+        function addContent() {
+            const imgUrl = document.getElementById('imgUrl').value.trim();
+            const linkUrl = document.getElementById('linkUrl').value.trim();
+            const titleText = document.getElementById('titleText').value.trim();
+
+            if (!imgUrl && !linkUrl) {
+                alert('사진 URL 또는 링크 URL 중 하나는 입력해야 합니다.');
+                return;
+            }
+
+            const newItem = {
+                id: Date.now(),
+                imgUrl: imgUrl,
+                linkUrl: linkUrl,
+                title: titleText || '제목 없음'
+            };
+
+            let items = JSON.parse(localStorage.getItem('site_items') || '[]');
+            items.push(newItem);
+            localStorage.setItem('site_items', JSON.stringify(items));
+
+            document.getElementById('imgUrl').value = '';
+            document.getElementById('linkUrl').value = '';
+            document.getElementById('titleText').value = '';
+
+            renderContent();
+        }
+
+        function deleteItem(id) {
+            let items = JSON.parse(localStorage.getItem('site_items') || '[]');
+            items = items.filter(item => item.id !== id);
+            localStorage.setItem('site_items', JSON.stringify(items));
+            renderContent();
+        }
+
+        function renderContent() {
+            const grid = document.getElementById('contentGrid');
+            grid.innerHTML = '';
+            
+            const items = JSON.parse(localStorage.getItem('site_items') || '[]');
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                let html = '';
+                if (item.imgUrl) {
+                    html += `<img src="${item.imgUrl}" alt="이미지" onerror="this.style.display='none'">`;
+                }
+                html += `<p style="font-weight: bold; margin-bottom: 5px;">${item.title}</p>`;
+                if (item.linkUrl) {
+                    html += `<a href="${item.linkUrl}" target="_blank" rel="noopener noreferrer">링크 바로가기</a>`;
+                }
+                if (isAdmin) {
+                    html += `<button class="delete-btn" onclick="deleteItem(${item.id})">삭제</button>`;
+                }
+
+                card.innerHTML = html;
+                grid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
