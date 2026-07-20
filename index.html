@@ -15,7 +15,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #87CEEB 0%, #FFFFFF 100%); /* 하늘색 ~ 흰색 그라데이션 */
+            background: linear-gradient(135deg, #87CEEB 0%, #FFFFFF 100%);
             min-height: 100vh;
             padding: 20px;
             display: flex;
@@ -67,7 +67,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             margin-bottom: 20px;
-            display: none; /* 기본적으로 숨김 */
+            display: none;
         }
 
         .admin-panel.active {
@@ -111,7 +111,7 @@
 
         .card img {
             max-width: 100%;
-            height: 180px;
+            max-height: 200px;
             object-fit: cover;
             border-radius: 5px;
             margin-bottom: 10px;
@@ -165,8 +165,8 @@
             <h3>콘텐츠 추가 (관리자 전용)</h3>
             <br>
             <div class="form-group">
-                <label for="imgUrl">사진 URL:</label>
-                <input type="text" id="imgUrl" placeholder="https://example.com/image.jpg">
+                <label for="imgFile">사진 업로드:</label>
+                <input type="file" id="imgFile" accept="image/*">
             </div>
             <div class="form-group">
                 <label for="linkUrl">연결할 링크 URL:</label>
@@ -199,13 +199,12 @@
     </div>
 
     <script>
-        // 변경된 관리자 계정 정보
+        // 관리자 계정 정보
         const ADMIN_ID = "jeonghyeon";
         const ADMIN_PW = "0015";
 
         let isAdmin = false;
 
-        // 페이지 로드 시 저장된 데이터 불러오기
         window.onload = function() {
             renderContent();
         };
@@ -251,31 +250,50 @@
         }
 
         function addContent() {
-            const imgUrl = document.getElementById('imgUrl').value.trim();
+            const fileInput = document.getElementById('imgFile');
             const linkUrl = document.getElementById('linkUrl').value.trim();
             const titleText = document.getElementById('titleText').value.trim();
+            const file = fileInput.files[0];
 
-            if (!imgUrl && !linkUrl) {
-                alert('사진 URL 또는 링크 URL 중 하나는 입력해야 합니다.');
+            if (!file && !linkUrl) {
+                alert('사진을 업로드하거나 링크 URL 중 하나는 입력해야 합니다.');
                 return;
             }
 
+            // 사진 파일이 선택된 경우 FileReader로 읽기
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    saveItem(e.target.result, linkUrl, titleText);
+                };
+                reader.readAsDataURL(file); // 이미지를 데이터 URL 형태로 변환
+            } else {
+                saveItem('', linkUrl, titleText);
+            }
+        }
+
+        function saveItem(imgData, linkUrl, titleText) {
             const newItem = {
                 id: Date.now(),
-                imgUrl: imgUrl,
+                imgUrl: imgData, // 읽어온 파일 이미지 데이터
                 linkUrl: linkUrl,
                 title: titleText || '제목 없음'
             };
 
-            let items = JSON.parse(localStorage.getItem('site_items') || '[]');
-            items.push(newItem);
-            localStorage.setItem('site_items', JSON.stringify(items));
+            try {
+                let items = JSON.parse(localStorage.getItem('site_items') || '[]');
+                items.push(newItem);
+                localStorage.setItem('site_items', JSON.stringify(items));
 
-            document.getElementById('imgUrl').value = '';
-            document.getElementById('linkUrl').value = '';
-            document.getElementById('titleText').value = '';
+                // 입력창 초기화
+                document.getElementById('imgFile').value = '';
+                document.getElementById('linkUrl').value = '';
+                document.getElementById('titleText').value = '';
 
-            renderContent();
+                renderContent();
+            } catch (e) {
+                alert('사진 용량이 너무 큽니다. 더 작은 용량의 이미지 파일을 사용해 주세요.');
+            }
         }
 
         function deleteItem(id) {
@@ -297,7 +315,7 @@
 
                 let html = '';
                 if (item.imgUrl) {
-                    html += `<img src="${item.imgUrl}" alt="이미지" onerror="this.style.display='none'">`;
+                    html += `<img src="${item.imgUrl}" alt="업로드 이미지">`;
                 }
                 html += `<p style="font-weight: bold; margin-bottom: 5px;">${item.title}</p>`;
                 if (item.linkUrl) {
